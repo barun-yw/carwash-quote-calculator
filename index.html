@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>바른카워시 견적 계산기</title>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide-react@0.263.1/dist/umd/lucide-react.js"></script>
+</head>
+<body>
+    <div id="root"></div>
+    <script type="text/babel">
+        const { useState } = React;
+        const { MessageCircle, Calculator, Check, ArrowRight, FileText, Car, Search, HelpCircle } = lucide;
+
+        function CarWashQuoteApp() {
+            const [currentStep, setCurrentStep] = useState(0);
+            const [answers, setAnswers] = useState({});
+            const [quote, setQuote] = useState(null);
+            const [isCompleted, setIsCompleted] = useState(false);
+            const [searchTerm, setSearchTerm] = useState('');
+            const [showManualInput, setShowManualInput] = useState(false);
+            const [showContactPopup, setShowContactPopup] = useState(false);
+
+            // 국내 차량 모델 데이터베이스
+            const carModels = {
+                hyundai: {
+                    brand: '현대',
+                    models: {
+                        compact: ['캐스퍼'],
+                        small: ['i20', '엑센트', '아반떼', '엘란트라', 'i30'],
+                        medium: ['쏘나타', '아이오닉6', '아이오닉5'],
+                        large: ['그랜저', '제네시스 G80', '제네시스 G90', 'EQS'],
+                        smallSUV: ['코나', '베뉴'],
+                        mediumSUV: ['투싼', '산타페', '싼타페', '넥쏘'],
+                        largeSUV: ['팰리세이드', '베라크루즈', 'GV80', 'GV70'],
+                        van: ['스타렉스', '포터', '그레이스']
+                    }
+                },
+                kia: {
+                    brand: '기아',
+                    models: {
+                        compact: ['레이'],
+                        small: ['모닝', '프라이드', 'K3', '리오'],
+                        medium: ['K5', 'EV6'],
+                        large: ['K7', 'K9', '스팅거'],
+                        smallSUV: ['스토닉', '니로'],
+                        mediumSUV: ['셀토스', '스포티지', '쏘렌토'],
+                        largeSUV: ['모하비', '카니발', 'EV9'],
+                        van: ['봉고', '카니발', '프레지오']
+                    }
+                }
+            };
+
+            // 모든 모델을 플랫 리스트로 변환
+            const getAllModels = () => {
+                const allModels = [];
+                for (const brand in carModels) {
+                    const brandData = carModels[brand];
+                    for (const carType in brandData.models) {
+                        brandData.models[carType].forEach(model => {
+                            allModels.push({
+                                model,
+                                brand: brandData.brand,
+                                carType
+                            });
+                        });
+                    }
+                }
+                return allModels.sort((a, b) => a.model.localeCompare(b.model, 'ko'));
+            };
+
+            // 검색 필터링
+            const filteredModels = getAllModels().filter(item =>
+                item.model.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                item.brand.toLowerCase().includes(searchTerm.toLowerCase())
+            );
+
+            const questions = [
+                {
+                    id: 'carSelection',
+                    question: '차량을 어떻게 선택하시겠어요?',
+                    type: 'carSelection'
+                },
+                {
+                    id: 'carType',
+                    question: '고객님의 차종을 선택해주세요',
+                    type: 'select',
+                    options: [
+                        { value: 'compact', label: '경차', oneTime: 45000, monthly4: 85000, monthlyOut: 80000 },
+                        { value: 'small', label: '소형/준중형', oneTime: 50000, monthly4: 95000, monthlyOut: 85000 },
+                        { value: 'medium', label: '중형', oneTime: 55000, monthly4: 105000, monthlyOut: 90000 },
+                        { value: 'large', label: '준대형/대형', oneTime: 60000, monthly4: 115000, monthlyOut: 95000 },
+                        { value: 'smallSUV', label: '소형 SUV', oneTime: 55000, monthly4: 95000, monthlyOut: 85000 },
+                        { value: 'mediumSUV', label: '중형 SUV', oneTime: 60000, monthly4: 105000, monthlyOut: 95000 },
+                        { value: 'largeSUV', label: '대형 SUV', oneTime: 70000, monthly4: 115000, monthlyOut: 100000 },
+                        { value: 'van', label: '승합차급', oneTime: 95000, monthly4: 135000, monthlyOut: 120000 }
+                    ]
+                },
+                {
+                    id: 'serviceType',
+                    question: '원하시는 서비스 유형을 선택해주세요',
+                    type: 'select',
+                    options: [
+                        { value: 'oneTime', label: '1회 관리 (외부+내부)', description: '외부 세차 + 내부 청소' },
+                        { value: 'monthly4', label: '월 4회 할인관리 (외부 3회 + 내부 1회)', description: '정기 관리 패키지' },
+                        { value: 'monthlyOut', label: '월 4회 외부관리 (외부 4회)', description: '외부 세차만 4회' }
+                    ]
+                },
+                {
+                    id: 'additionalOptions',
+                    question: '추가 옵션을 선택해주세요 (선택사항)',
+                    type: 'checkbox',
+                    options: [
+                        { value: 'sanitizing', label: '살균세차', price: 15000 },
+                        { value: 'wax', label: '카나우바 왁스코팅', price: 10000 },
+                        { value: 'waterRepellent', label: '유리 발수코팅', price: 15000 },
+                        { value: 'glassCoating', label: '유리막 코팅', price: 150000 }
+                    ]
+                }
+            ];
+
+            const handleAnswer = (questionId, value) => {
+                const newAnswers = { ...answers, [questionId]: value };
+                setAnswers(newAnswers);
+                
+                if (currentStep < questions.length - 1) {
+                    setCurrentStep(currentStep + 1);
+                } else {
+                    calculateQuote(newAnswers);
+                }
+            };
+
+            const handleModelSelection = (modelData) => {
+                const newAnswers = { 
+                    ...answers, 
+                    carSelection: 'model',
+                    selectedModel: modelData.model,
+                    carType: modelData.carType 
+                };
+                setAnswers(newAnswers);
+                setCurrentStep(2);
+            };
+
+            const calculateQuote = (finalAnswers) => {
+                let totalPrice = 0;
+                let breakdown = [];
+
+                const carType = finalAnswers.carType;
+                const serviceType = finalAnswers.serviceType;
+                
+                if (carType && serviceType) {
+                    const carOption = questions[1].options.find(opt => opt.value === carType);
+                    const serviceOption = questions[2].options.find(opt => opt.value === serviceType);
+                    
+                    if (carOption && serviceOption) {
+                        let basePrice = 0;
+                        switch (serviceType) {
+                            case 'oneTime':
+                                basePrice = carOption.oneTime;
+                                break;
+                            case 'monthly4':
+                                basePrice = carOption.monthly4;
+                                break;
+                            case 'monthlyOut':
+                                basePrice = carOption.monthlyOut;
+                                break;
+                        }
+                        
+                        totalPrice += basePrice;
+                        breakdown.push({
+                            item: `${carOption.label} - ${serviceOption.label}`,
+                            price: basePrice
+                        });
+                    }
+                }
+
+                const additionalOptions = finalAnswers.additionalOptions || [];
+                if (Array.isArray(additionalOptions)) {
+                    additionalOptions.forEach(value => {
+                        const option = questions[3].options.find(opt => opt.value === value);
+                        if (option) {
+                            totalPrice += option.price;
+                            breakdown.push({
+                                item: option.label,
+                                price: option.price
+                            });
+                        }
+                    });
+                }
+
+                setQuote({
+                    total: totalPrice,
+                    breakdown: breakdown,
+                    finalTotal: totalPrice,
+                    selectedModel: finalAnswers.selectedModel || null
+                });
+                setIsCompleted(true);
+            };
+
+            const formatPrice = (price) => {
+                return new Intl.NumberFormat('ko-KR').format(price) + '원';
+            };
+
+            const resetQuote = () => {
+                setCurrentStep(0);
+                setAnswers({});
+                setQuote(null);
+                setIsCompleted(false);
+                setSearchTerm('');
+                setShowManualInput(false);
+            };
+
+            const currentQuestion = questions[currentStep];
+
+            // 견적서 화면
+            if (isCompleted && quote) {
+                return (
+                    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-cyan-100 p-4">
+                        <div className="max-w-2xl mx-auto">
+                            <div className="bg-white rounded-2xl shadow-xl p-8">
+                                <div className="text-center mb-8">
+                                    <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                        <Check className="w-8 h-8 text-green-600" />
+                                    </div>
+                                    <h1 className="text-3xl font-bold text-gray-800 mb-2">견적서 완성!</h1>
+                                    <p className="text-gray-600">
+                                        {quote.selectedModel && `${quote.selectedModel} `}
+                                        출장 손세차 서비스 견적을 확인해주세요.
+                                    </p>
+                                </div>
+
+                                <div className="bg-gray-50 rounded-xl p-6 mb-6">
+                                    <h3 className="text-xl font-semibold mb-4 flex items-center">
+                                        <FileText className="w-5 h-5 mr-2" />
+                                        출장 손세차 견적 내역
+                                    </h3>
+                                    
+                                    <div className="space-y-3 mb-4">
+                                        {quote.breakdown.map((item, index) => (
+                                            <div key={index} className="flex justify-between items-center py-2 border-b border-gray-200 last:border-b-0">
+                                                <span className="text-gray-700">{item.item}</span>
+                                                <span className="font-medium">{formatPrice(item.price)}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+
+                                    <div className="border-t-2 border-gray-300 pt-4">
+                                        <div className="flex justify-between items-center text-xl font-bold text-blue-600">
+                                            <span>총 견적 금액 (부가세 포함)</span>
+                                            <span>{formatPrice(quote.finalTotal)}</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="bg-blue-50 rounded-xl p-4 mb-6">
+                                    <h4 className="font-semibold text-blue-800 mb-2">📍 서비스 안내</h4>
+                                    <ul className="text-sm text-blue-700 space-y-1">
+                                        <li>• 출장비는 별도로 청구되지 않습니다</li>
+                                        <li>• 모든 가격은 부가세 포함 가격입니다</li>
+                                        <li>• 월 정기 관리는 할인 혜택이 적용됩니다</li>
+                                        <li>• 차량 오염 정도가 심할 경우 추가요금이 발생할 수 있습니다</li>
+                                        <li>• 날씨나 현장 여건에 따라 서비스가 연기될 수 있습니다</li>
+                                    </ul>
+                                </div>
+
+                                <div className="flex gap-4">
+                                    <button
+                                        onClick={resetQuote}
+                                        className="flex-1 bg-gray-200 text-gray-800 py-3 px-6 rounded-xl font-medium hover:bg-gray-300 transition-colors"
+                                    >
+                                        다시 계산하기
+                                    </button>
+                                    <button 
+                                        onClick={() => setShowContactPopup(true)}
+                                        className="flex-1 bg-blue-600 text-white py-3 px-6 rounded-xl font-medium hover:bg-blue-700 transition-colors"
+                                    >
+                                        예약 문의하기
+                                    </button>
+                                </div>
+
+                                {showContactPopup && (
+                                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                                        <div className="bg-white rounded-2xl p-8 max-w-sm w-full mx-4 text-center">
+                                            <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                                <Car className="w-8 h-8 text-blue-600" />
+                                            </div>
+                                            <h3 className="text-xl font-bold text-gray-800 mb-2">바른카워시</h3>
+                                            <p className="text-gray-600 mb-4">지금 전화하세요</p>
+                                            <div className="bg-blue-50 rounded-xl p-4 mb-6">
+                                                <p className="text-2xl font-bold text-blue-600">010-8964-0000</p>
+                                            </div>
+                                            <div className="flex gap-3">
+                                                <button
+                                                    onClick={() => setShowContactPopup(false)}
+                                                    className="flex-1 bg-gray-200 text-gray-800 py-3 px-4 rounded-xl font-medium hover:bg-gray-300 transition-colors"
+                                                >
+                                                    닫기
+                                                </button>
+                                                <button
+                                                    onClick={() => window.location.href = 'tel:010-8964-0000'}
+                                                    className="flex-1 bg-blue-600 text-white py-3 px-4 rounded-xl font-medium hover:bg-blue-700 transition-colors"
+                                                >
+                                                    전화걸기
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                );
+            }
+
+            return (
+                <div className="min-h-screen bg-gradient-to-br from-blue-50 to-cyan-100 p-4">
+                    <div className="max-w-2xl mx-auto">
+                        <div className="bg-white rounded-2xl shadow-xl p-8">
+                            <div className="text-center mb-8">
+                                <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                    <Car className="w-8 h-8 text-blue-600" />
+                                </div>
+                                <h1 className="text-3xl font-bold text-gray-800 mb-2">출장 손세차 견적</h1>
+                                <p className="text-gray-600">차종과 서비스를 선택하시면 정확한 견적을 계산해드립니다.</p>
+                            </div>
+
+                            <div className="mb-8">
+                                <div className="flex justify-between text-sm text-gray-500 mb-2">
+                                    <span>진행 상황</span>
+                                    <span>{currentStep + 1} / {questions.length}</span>
+                                </div>
+                                <div className="w-full bg-gray-200 rounded-full h-2">
+                                    <div 
+                                        className="bg-blue-600 h-2 rounded-full transition-all duration-300 ease-out"
+                                        style={{ width: `${((currentStep + 1) / questions.length) * 100}%` }}
+                                    ></div>
+                                </div>
+                            </div>
+
+                            <div className="mb-8">
+                                <div className="flex items-center mb-4">
+                                    <MessageCircle className="w-6 h-6 text-blue-600 mr-3" />
+                                    <h2 className="text-xl font-semibold text-gray-800">
+                                        {currentQuestion.question}
+                                    </h2>
+                                </div>
+
+                                {currentQuestion.type === 'carSelection' && (
+                                    <div className="space-y-4">
+                                        <button
+                                            onClick={() => setCurrentStep(1)}
+                                            className="w-full p-4 text-left border border-gray-200 rounded-xl hover:border-blue-300 hover:bg-blue-50 transition-all duration-200 group"
+                                        >
+                                            <div className="flex justify-between items-center">
+                                                <div>
+                                                    <span className="font-medium text-gray-800 block">차종을 알고 있어요</span>
+                                                    <span className="text-sm text-gray-500">경차, 소형차, SUV 등으로 직접 선택</span>
+                                                </div>
+                                                <ArrowRight className="w-5 h-5 text-gray-400 group-hover:text-blue-600 transition-colors" />
+                                            </div>
+                                        </button>
+
+                                        <div className="border border-gray-200 rounded-xl p-4">
+                                            <div className="flex items-center mb-3">
+                                                <Search className="w-5 h-5 text-blue-600 mr-2" />
+                                                <span className="font-medium text-gray-800">차량 모델로 찾기</span>
+                                            </div>
+                                            <input
+                                                type="text"
+                                                placeholder="차량 모델명을 검색하세요 (예: 아반떼, 쏘나타, 투싼...)"
+                                                value={searchTerm}
+                                                onChange={(e) => setSearchTerm(e.target.value)}
+                                                className="w-full p-3 border border-gray-300 rounded-lg mb-3"
+                                            />
+                                            
+                                            {searchTerm && (
+                                                <div className="max-h-40 overflow-y-auto space-y-1">
+                                                    {filteredModels.slice(0, 10).map((item, index) => (
+                                                        <button
+                                                            key={index}
+                                                            onClick={() => handleModelSelection(item)}
+                                                            className="w-full p-2 text-left hover:bg-blue-50 rounded-lg transition-colors"
+                                                        >
+                                                            <span className="font-medium">{item.model}</span>
+                                                            <span className="text-sm text-gray-500 ml-2">({item.brand})</span>
+                                                        </button>
+                                                    ))}
+                                                    {filteredModels.length === 0 && (
+                                                        <p className="text-sm text-gray-500 p-2">검색 결과가 없습니다.</p>
+                                                    )}
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {currentQuestion.type === 'select' && currentQuestion.id !== 'carSelection' && (
+                                    <div className="space-y-3">
+                                        {currentQuestion.options.map((option) => (
+                                            <button
+                                                key={option.value}
+                                                onClick={() => handleAnswer(currentQuestion.id, option.value)}
+                                                className="w-full p-4 text-left border border-gray-200 rounded-xl hover:border-blue-300 hover:bg-blue-50 transition-all duration-200 group"
+                                            >
+                                                <div className="flex justify-between items-center">
+                                                    <div>
+                                                        <span className="font-medium text-gray-800 block">{option.label}</span>
+                                                        {option.description && (
+                                                            <span className="text-sm text-gray-500">{option.description}</span>
+                                                        )}
+                                                    </div>
+                                                    <div className="flex items-center">
+                                                        {currentQuestion.id === 'carType' && (
+                                                            <div className="text-right mr-2">
+                                                                <div className="text-xs text-gray-500">1회: {formatPrice(option.oneTime)}</div>
+                                                                <div className="text-xs text-gray-500">월4회: {formatPrice(option.monthly4)}</div>
+                                                            </div>
+                                                        )}
+                                                        <ArrowRight className="w-5 h-5 text-gray-400 group-hover:text-blue-600 transition-colors" />
+                                                    </div>
+                                                </div>
+                                            </button>
+                                        ))}
+                                    </div>
+                                )}
+
+                                {currentQuestion.type === 'checkbox' && (
+                                    <div className="space-y-3">
+                                        {currentQuestion.options.map((option) => (
+                                            <label
+                                                key={option.value}
+                                                className="flex items-center p-4 border border-gray-200 rounded-xl hover:border-blue-300 hover:bg-blue-50 transition-all duration-200 cursor-pointer"
+                                            >
+                                                <input
+                                                    type="checkbox"
+                                                    className="w-5 h-5 text-blue-600 rounded mr-4"
+                                                    onChange={(e) => {
+                                                        const currentAnswers = answers[currentQuestion.id] || [];
+                                                        let newAnswers;
+                                                        if (e.target.checked) {
+                                                            newAnswers = [...currentAnswers, option.value];
+                                                        } else {
+                                                            newAnswers = currentAnswers.filter(val => val !== option.value);
+                                                        }
+                                                        setAnswers({ ...answers, [currentQuestion.id]: newAnswers });
+                                                    }}
+                                                />
+                                                <div className="flex-1 flex justify-between items-center">
+                                                    <span className="font-medium text-gray-800">{option.label}</span>
+                                                    <span className="text-blue-600 font-medium">
+                                                        +{formatPrice(option.price)}
+                                                    </span>
+                                                </div>
+                                            </label>
+                                        ))}
+                                        
+                                        <button
+                                            onClick={() => handleAnswer(currentQuestion.id, answers[currentQuestion.id] || [])}
+                                            className="w-full bg-blue-600 text-white py-3 px-6 rounded-xl font-medium hover:bg-blue-700 transition-colors mt-4"
+                                        >
+                                            견적 계산하기
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        // 렌더링
+        ReactDOM.render(<CarWashQuoteApp />, document.getElementById('root'));
+    </script>
+</body>
+</html>
