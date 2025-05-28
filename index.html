@@ -39,17 +39,64 @@
             background: #1976d2; 
             color: white; 
             border: none; 
-            padding: 15px 25px; 
+            padding: 15px 20px; 
             border-radius: 10px; 
             cursor: pointer; 
             width: 100%; 
             margin: 8px 0; 
             font-size: 16px;
             transition: background 0.3s;
+            text-align: left;
+            display: block;
         }
         .btn:hover { background: #1565c0; }
         .btn.secondary { background: #666; }
         .btn.secondary:hover { background: #555; }
+        
+        /* 체크박스 전용 스타일 */
+        .checkbox-option {
+            background: white;
+            border: 2px solid #e0e0e0;
+            color: #333;
+            padding: 15px 20px;
+            border-radius: 10px;
+            margin: 8px 0;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .checkbox-option:hover {
+            border-color: #1976d2;
+            background: #f8f9ff;
+        }
+        .checkbox-option.checked {
+            background: #e3f2fd;
+            border-color: #1976d2;
+            color: #1976d2;
+        }
+        .checkbox-option input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            margin-right: 15px;
+            flex-shrink: 0;
+            accent-color: #1976d2;
+        }
+        .option-content {
+            flex: 1;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .option-label {
+            font-weight: 500;
+        }
+        .option-price {
+            font-weight: bold;
+            color: #1976d2;
+        }
+        
         .result { 
             background: #f8f9fa; 
             padding: 25px; 
@@ -127,9 +174,10 @@
             border: 1px solid #ddd;
             border-radius: 8px;
             margin-top: 10px;
+            background: white;
         }
         .search-item {
-            padding: 10px;
+            padding: 12px;
             cursor: pointer;
             border-bottom: 1px solid #eee;
         }
@@ -160,6 +208,14 @@
             color: #666;
             margin-bottom: 10px;
         }
+        
+        /* 반응형 디자인 */
+        @media (max-width: 480px) {
+            body { padding: 10px; }
+            .container { padding: 20px; }
+            h1 { font-size: 24px; }
+            .btn, .checkbox-option { padding: 12px 15px; font-size: 15px; }
+        }
     </style>
 </head>
 <body>
@@ -185,14 +241,30 @@
         <!-- 단계 1-1: 차종 직접 선택 -->
         <div id="carTypes" class="step">
             <h3>🚗 차종을 선택해주세요</h3>
-            <button class="btn" onclick="selectCar('경차', 45000)">경차 - 45,000원</button>
-            <button class="btn" onclick="selectCar('소형/준중형', 50000)">소형/준중형 - 50,000원</button>
-            <button class="btn" onclick="selectCar('중형', 55000)">중형 - 55,000원</button>
-            <button class="btn" onclick="selectCar('준대형/대형', 60000)">준대형/대형 - 60,000원</button>
-            <button class="btn" onclick="selectCar('소형 SUV', 55000)">소형 SUV - 55,000원</button>
-            <button class="btn" onclick="selectCar('중형 SUV', 60000)">중형 SUV - 60,000원</button>
-            <button class="btn" onclick="selectCar('대형 SUV', 70000)">대형 SUV - 70,000원</button>
-            <button class="btn" onclick="selectCar('승합차급', 95000)">승합차급 - 95,000원</button>
+            <button class="btn" onclick="selectCar('경차', 45000)">
+                경차<br><small style="opacity: 0.8;">45,000원부터</small>
+            </button>
+            <button class="btn" onclick="selectCar('소형/준중형', 50000)">
+                소형/준중형<br><small style="opacity: 0.8;">50,000원부터</small>
+            </button>
+            <button class="btn" onclick="selectCar('중형', 55000)">
+                중형<br><small style="opacity: 0.8;">55,000원부터</small>
+            </button>
+            <button class="btn" onclick="selectCar('준대형/대형', 60000)">
+                준대형/대형<br><small style="opacity: 0.8;">60,000원부터</small>
+            </button>
+            <button class="btn" onclick="selectCar('소형 SUV', 55000)">
+                소형 SUV<br><small style="opacity: 0.8;">55,000원부터</small>
+            </button>
+            <button class="btn" onclick="selectCar('중형 SUV', 60000)">
+                중형 SUV<br><small style="opacity: 0.8;">60,000원부터</small>
+            </button>
+            <button class="btn" onclick="selectCar('대형 SUV', 70000)">
+                대형 SUV<br><small style="opacity: 0.8;">70,000원부터</small>
+            </button>
+            <button class="btn" onclick="selectCar('승합차급', 95000)">
+                승합차급<br><small style="opacity: 0.8;">95,000원부터</small>
+            </button>
         </div>
 
         <!-- 단계 1-2: 모델 검색 -->
@@ -209,38 +281,55 @@
             <h3>⚙️ 서비스 유형을 선택해주세요</h3>
             <button class="btn" onclick="selectService('1회 관리 (외부+내부)', 0)">
                 1회 관리 (외부+내부)<br>
-                <small>외부 세차 + 내부 청소</small>
+                <small style="opacity: 0.8;">외부 세차 + 내부 청소</small>
             </button>
             <button class="btn" onclick="selectService('월 4회 할인관리 (외부 3회 + 내부 1회)', 15000)">
                 월 4회 할인관리 (외부 3회 + 내부 1회)<br>
-                <small>정기 관리 패키지 (+15,000원)</small>
+                <small style="opacity: 0.8;">정기 관리 패키지 (+15,000원)</small>
             </button>
             <button class="btn" onclick="selectService('월 4회 외부관리 (외부 4회)', 10000)">
                 월 4회 외부관리 (외부 4회)<br>
-                <small>외부 세차만 4회 (+10,000원)</small>
+                <small style="opacity: 0.8;">외부 세차만 4회 (+10,000원)</small>
             </button>
         </div>
 
         <!-- 단계 3: 추가 옵션 -->
         <div id="step3" class="step">
             <h3>➕ 추가 옵션을 선택해주세요 (선택사항)</h3>
-            <label class="btn" style="text-align: left; padding: 12px 15px;">
-                <input type="checkbox" id="sanitizing" value="15000" onchange="updateOptions()"> 
-                살균세차 (+15,000원)
-            </label>
-            <label class="btn" style="text-align: left; padding: 12px 15px;">
-                <input type="checkbox" id="wax" value="10000" onchange="updateOptions()"> 
-                카나우바 왁스코팅 (+10,000원)
-            </label>
-            <label class="btn" style="text-align: left; padding: 12px 15px;">
-                <input type="checkbox" id="waterRepellent" value="15000" onchange="updateOptions()"> 
-                유리 발수코팅 (+15,000원)
-            </label>
-            <label class="btn" style="text-align: left; padding: 12px 15px;">
-                <input type="checkbox" id="glassCoating" value="150000" onchange="updateOptions()"> 
-                유리막 코팅 (+150,000원)
-            </label>
-            <button class="btn" onclick="calculateFinal()" style="margin-top: 20px;">견적 계산하기</button>
+            
+            <div class="checkbox-option" onclick="toggleCheckbox('sanitizing')">
+                <input type="checkbox" id="sanitizing" value="15000" onchange="updateOptions()" onclick="event.stopPropagation()">
+                <div class="option-content">
+                    <span class="option-label">살균세차</span>
+                    <span class="option-price">+15,000원</span>
+                </div>
+            </div>
+
+            <div class="checkbox-option" onclick="toggleCheckbox('wax')">
+                <input type="checkbox" id="wax" value="10000" onchange="updateOptions()" onclick="event.stopPropagation()">
+                <div class="option-content">
+                    <span class="option-label">카나우바 왁스코팅</span>
+                    <span class="option-price">+10,000원</span>
+                </div>
+            </div>
+
+            <div class="checkbox-option" onclick="toggleCheckbox('waterRepellent')">
+                <input type="checkbox" id="waterRepellent" value="15000" onchange="updateOptions()" onclick="event.stopPropagation()">
+                <div class="option-content">
+                    <span class="option-label">유리 발수코팅</span>
+                    <span class="option-price">+15,000원</span>
+                </div>
+            </div>
+
+            <div class="checkbox-option" onclick="toggleCheckbox('glassCoating')">
+                <input type="checkbox" id="glassCoating" value="150000" onchange="updateOptions()" onclick="event.stopPropagation()">
+                <div class="option-content">
+                    <span class="option-label">유리막 코팅</span>
+                    <span class="option-price">+150,000원</span>
+                </div>
+            </div>
+
+            <button class="btn" onclick="calculateFinal()" style="margin-top: 25px;">견적 계산하기</button>
         </div>
 
         <!-- 결과 화면 -->
@@ -383,8 +472,23 @@
             updateProgress(3);
         }
 
+        function toggleCheckbox(checkboxId) {
+            const checkbox = document.getElementById(checkboxId);
+            checkbox.checked = !checkbox.checked;
+            updateOptions();
+        }
+
         function updateOptions() {
-            // 옵션 변경 시 실시간 업데이트는 여기서 처리할 수 있습니다.
+            // 체크박스 스타일 업데이트
+            const checkboxes = document.querySelectorAll('.checkbox-option');
+            checkboxes.forEach(option => {
+                const checkbox = option.querySelector('input[type="checkbox"]');
+                if (checkbox.checked) {
+                    option.classList.add('checked');
+                } else {
+                    option.classList.remove('checked');
+                }
+            });
         }
 
         function calculateFinal() {
@@ -444,7 +548,15 @@
             
             // 체크박스 초기화
             const checkboxes = document.querySelectorAll('input[type="checkbox"]');
-            checkboxes.forEach(cb => cb.checked = false);
+            checkboxes.forEach(cb => {
+                cb.checked = false;
+            });
+            
+            // 체크박스 스타일 초기화
+            const checkboxOptions = document.querySelectorAll('.checkbox-option');
+            checkboxOptions.forEach(option => {
+                option.classList.remove('checked');
+            });
             
             // 검색 입력 초기화
             document.getElementById('searchInput').value = '';
